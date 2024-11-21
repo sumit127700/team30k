@@ -52,6 +52,11 @@ deviceIdentifierSchema.pre('validate', function(next) {
 
 const DeviceIdentifier = mongoose.model('DeviceIdentifier', deviceIdentifierSchema);
 
+app.get('',async(req,res)=>{
+    return res.json({
+        message: 'hello world',
+    });
+})
 app.post('/row/device_identifiers', async (req, res) => {
     try {
         const { hardware_id, device_id, android_id } = req.body;
@@ -63,6 +68,7 @@ app.post('/row/device_identifiers', async (req, res) => {
                 { device_id: device_id },
                 { android_id: android_id }
             ]
+
         });
 
         if (existingRow) {
