@@ -26,11 +26,11 @@ const deviceIdentifierSchema = new mongoose.Schema({
         default: uuidv4,
         index: true
     },
-    hardware_id: { 
+    media_drm_id: { 
         type: String, 
         default: null
     },
-    device_id: { 
+    gsf_id: { 
         type: String, 
         default: null
     },
@@ -59,13 +59,18 @@ app.get('',async(req,res)=>{
 })
 app.post('/row/device_identifiers', async (req, res) => {
     try {
-        const { hardware_id, device_id, android_id } = req.body;
-
+        const {mediaDrmId, gsfId, androidId} = req.body;
+       const media_drm_id = mediaDrmId;
+       const gsf_id = gsfId;
+       const android_id = androidId;
+        console.log(req.body);
         // Check if any of the identifiers already exist in the database
+    
+
         const existingRow = await DeviceIdentifier.findOne({
             $or: [
-                { hardware_id: hardware_id },
-                { device_id: device_id },
+                { media_drm_id: media_drm_id },
+                { gsf_id: gsf_id },
                 { android_id: android_id }
             ]
 
@@ -76,19 +81,19 @@ app.post('/row/device_identifiers', async (req, res) => {
             let updated = false;  // To track if any update happens
 
             // Check and handle the hardware_id
-            if (hardware_id) {
+            if (media_drm_id) {
                 // Update if hardware_id is missing or if there's a conflict with the existing value
-                if (!existingRow.hardware_id || existingRow.hardware_id !== hardware_id) {
-                    existingRow.hardware_id = hardware_id;
+                if (!existingRow.media_drm_id || existingRow.media_drm_id !== media_drm_id) {
+                    existingRow.media_drm_id = media_drm_id;
                     updated = true;
                 }
             }
 
             // Check and handle the device_id
-            if (device_id) {
+            if (gsf_id) {
                 // Update if device_id is missing or if there's a conflict with the existing value
-                if (!existingRow.device_id || existingRow.device_id !== device_id) {
-                    existingRow.device_id = device_id;
+                if (!existingRow.gsf_id || existingRow.gsf_id !== gsf_id) {
+                    existingRow.gsf_id = gsf_id;
                     updated = true;
                 }
             }
@@ -116,8 +121,8 @@ app.post('/row/device_identifiers', async (req, res) => {
             const newRandomId = uuidv4();
             const newRow = new DeviceIdentifier({
                 random_id: newRandomId,
-                hardware_id: hardware_id || null,
-                device_id: device_id || null,
+                media_drm_id: media_drm_id || null,
+                gsf_id: gsf_id || null,
                 android_id: android_id || null
             });
 
