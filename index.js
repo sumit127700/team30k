@@ -58,7 +58,7 @@ app.post('/row/device_identifiers', async (req, res) => {
                 { gsf_id: gsfId },
                 { android_id: androidId }
             ].filter(condition =>  Object.values(condition)[0] !== null && 
-            Object.values(condition)[0] !== undefined)
+            Object.values(condition)[0] !== undefined && Object.values(condition)[0] !== 'null')
         };
 
         // Find existing document
