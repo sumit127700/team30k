@@ -42,122 +42,88 @@ const deviceIdentifierSchema = new mongoose.Schema({
     timestamps: true
 });
 
-deviceIdentifierSchema.pre('validate', function(next) {
-    if (!this.hardware_id && !this.device_id && !this.android_id) {
-        next(new Error('At least one identifier must be provided'));
-    } else {
-        next();
-    }
-});
-
 const DeviceIdentifier = mongoose.model('DeviceIdentifier', deviceIdentifierSchema);
 
-app.get('',async(req,res)=>{
-    return res.json({
-        message: 'hello world',
-    });
-})
 app.post('/row/device_identifiers', async (req, res) => {
     try {
-        const {mediaDrmId, gsfId, androidId} = req.body;
-       const media_drm_id = mediaDrmId;
-       const gsf_id = gsfId;
-       const android_id = androidId;
-        console.log(req.body);
-        // Check if any of the identifiers already exist in the database
-    
+        const { mediaDrmId, gsfId, androidId } = req.body;
+        console.log('Received body:', req.body);
 
-        const existingRow = await DeviceIdentifier.findOne({
+        // Prepare search query to find existing document
+        const searchQuery = {
             $or: [
-                { media_drm_id: media_drm_id },
-                { gsf_id: gsf_id },
-                { android_id: android_id }
-            ]
+                { media_drm_id: mediaDrmId },
+                { gsf_id: gsfId },
+                { android_id: androidId }
+            ].filter(condition => Object.values(condition)[0] !== undefined)
+        };
 
-        });
+        // Find existing document
+        let existingDoc = await DeviceIdentifier.findOne(searchQuery);
 
-        if (existingRow) {
-            // If a row is found, handle and update conflicting or missing identifiers
-            let updated = false;  // To track if any update happens
+        if (existingDoc) {
+            // Flag to track if document needs updating
+            let needsUpdate = false;
 
-            // Check and handle the hardware_id
-            if (media_drm_id) {
-                // Update if hardware_id is missing or if there's a conflict with the existing value
-                if (!existingRow.media_drm_id || existingRow.media_drm_id !== media_drm_id) {
-                    existingRow.media_drm_id = media_drm_id;
-                    updated = true;
-                }
+            // Update media_drm_id if provided and different
+            if (mediaDrmId && existingDoc.media_drm_id !== mediaDrmId) {
+                existingDoc.media_drm_id = mediaDrmId;
+                needsUpdate = true;
             }
 
-            // Check and handle the device_id
-            if (gsf_id) {
-                // Update if device_id is missing or if there's a conflict with the existing value
-                if (!existingRow.gsf_id || existingRow.gsf_id !== gsf_id) {
-                    existingRow.gsf_id = gsf_id;
-                    updated = true;
-                }
+            // Update gsf_id if provided and different
+            if (gsfId && existingDoc.gsf_id !== gsfId) {
+                existingDoc.gsf_id = gsfId;
+                needsUpdate = true;
             }
 
-            // Check and handle the android_id
-            if (android_id) {
-                // Update if android_id is missing or if there's a conflict with the existing value
-                if (!existingRow.android_id || existingRow.android_id !== android_id) {
-                    existingRow.android_id = android_id;
-                    updated = true;
-                }
+            // Update android_id if provided and different
+            if (androidId && existingDoc.android_id !== androidId) {
+                existingDoc.android_id = androidId;
+                needsUpdate = true;
             }
 
-            // Save the updated row if any update occurred
-            if (updated) {
-                await existingRow.save();
+            // Save if any updates were made
+            if (needsUpdate) {
+                await existingDoc.save();
+                console.log('Existing document updated');
+                return res.json({
+                    message: 'Existing document updated successfully.',
+                    random_id: existingDoc.random_id
+                });
             }
 
+            // If no updates were needed, return existing random_id
             return res.json({
-                message: 'Row found and updated successfully.',
-                random_id: existingRow.random_id
+                message: 'Existing document found.',
+                random_id: existingDoc.random_id
             });
         } else {
-            // If no row is found, create a new one with a random_id
-            const newRandomId = uuidv4();
-            const newRow = new DeviceIdentifier({
-                random_id: newRandomId,
-                media_drm_id: media_drm_id || null,
-                gsf_id: gsf_id || null,
-                android_id: android_id || null
+            // Create new document
+            const newDoc = new DeviceIdentifier({
+                media_drm_id: mediaDrmId || null,
+                gsf_id: gsfId || null,
+                android_id: androidId || null
             });
 
-            await newRow.save(); // Save the new row
-
+            await newDoc.save();
+            console.log('New document created');
             return res.json({
-                message: 'New row created successfully.',
-                random_id: newRandomId
+                message: 'New document created successfully.',
+                random_id: newDoc.random_id
             });
         }
     } catch (err) {
-        console.error('Error:', err);
-        return res.status(500).json({ message: 'Something went wrong!', error: err.message });
+        console.error('Error in POST endpoint:', err);
+        return res.status(500).json({ 
+            message: 'Something went wrong!', 
+            error: err.message 
+        });
     }
 });
 
-
-
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ 
-        message: 'Something went wrong!', 
-        error: err.message 
-    });
-});
-
 // Server Configuration
-const PORT = process.env.PORT || 3000;
-app.listen(4321, () => {
-    console.log(`Server running on port ${4321}`);
-});
-
-// Optional: Graceful Shutdown
-process.on('SIGINT', async () => {
-    await mongoose.connection.close();
-    process.exit(0);
+const PORT = process.env.PORT || 4321;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
