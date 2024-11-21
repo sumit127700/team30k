@@ -49,13 +49,16 @@ app.post('/row/device_identifiers', async (req, res) => {
         const { mediaDrmId, gsfId, androidId } = req.body;
         console.log('Received body:', req.body);
 
+     
+
         // Prepare search query to find existing document
         const searchQuery = {
             $or: [
                 { media_drm_id: mediaDrmId },
                 { gsf_id: gsfId },
                 { android_id: androidId }
-            ].filter(condition => Object.values(condition)[0] !== undefined)
+            ].filter(condition =>  Object.values(condition)[0] !== null && 
+            Object.values(condition)[0] !== undefined)
         };
 
         // Find existing document
